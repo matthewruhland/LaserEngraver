@@ -37,10 +37,7 @@ def ScanImage(filename):
 ##    fft_mag = numpy.abs(numpy.fft.fftshift(numpy.fft.fft2(im_grey)))
 ##
 ##    visual = numpy.log(fft_mag)
-import os
-import datetime
-import time
-from threading import Thread
+
 def picFunc():
     os.system("fswebcam -r 640x480 --no-banner -save /home/pi/Desktop/PicturesTaken/%s.jpeg" %datetime.datetime.utcnow().strftime("%Y-%m-%d-%H:%M:%S"))
 ##    visual = (visual - visual.min()) / (visual.max() - visual.min())
@@ -107,19 +104,19 @@ def LEDTime(seconds):
     LEDPin = 8 #GPIO number
 
     GPIO.setup(LEDPin,GPIO.OUT)
-    #print "LASER on"
+    print "LASER on"
     GPIO.output(LEDPin,GPIO.HIGH)
     time.sleep(seconds)
-    #print "LASER off"
+    print "LASER off"
     GPIO.output(LEDPin,GPIO.LOW)
 
-def PixelBurn(GrayVal):
+#def PixelBurn(GrayVal):
     
     #grayscale darkest to whitest (0 to 255)
     #graycale 1
-    if (GrayVal ...
-        D2a
-    elif (
+#    if (GrayVal ...
+#        D2a
+#    elif (
     
 
 def D2A(AnalogValue):
@@ -152,7 +149,7 @@ def D2A(AnalogValue):
 
     #CS goes high to terminate communication
     GPIO.output(13,GPIO.HIGH)
-
+    
 def EngravePixels(TwodArrayofPixels, OnePixelSize, TimeLaserIsOn):
     forward = True
     #forwards is clockwise
@@ -165,7 +162,8 @@ def EngravePixels(TwodArrayofPixels, OnePixelSize, TimeLaserIsOn):
             printValue = TwodArrayofPixels[i][j]
             MoveLaserMotor(forward, OnePixelSize)
             time =TimeLaserIsOn*(1/printValue)      #???
-            pixelBurn(pixels[i][j])
+            #LEDTime(time)
+            #pixelBurn(pixels[i][j])
         MoveLaserMotor(backward, height*OnePixelSize) 
         StationMotor(backward, OnePixelSize) 
         print "New Row"
