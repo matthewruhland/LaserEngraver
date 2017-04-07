@@ -10,40 +10,45 @@ import datetime
 import time
 from threading import Thread
 
-
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
+GPIO.setup(8,GPIO.OUT)
+GPIO.setup(7, GPIO.IN)
 
 
+def LaserOn():
+    GPIO.output(8,GPIO.HIGH)
 
-def picFunc():
-    filepath1 = '/home/pi/Desktop/PicturesTaken'('Pixels ', 1200, 630, ' ')
-
-    os.system("fswebcam -r 640x480 --no-banner -save /home/pi/Desktop/PicturesTaken/%s.jpeg" %datetime.datetime.utcnow().strftime("%Y-%m-%d-%H:%M:%S"))
-
-#Global Variables
+def LaserOff():
+    GPIO.output(8,GPIO.LOW)
 
 
 def ScanImage(filename):
     im = Image.open(filename)
     im_grey = im.convert('LA')
-    width,height = im_grey.size
-    print ("Pixels ",width,height," ")
+    im_grey.convert('RGB').save("/home/pi/Desktop/gray.jpg")
+    im_grey_shrunk = im_grey.resize((100,100))
+    im_grey_shrunk.convert('RGB').save("/home/pi/Desktop/grayShrunk.jpg")
+    width,height = im_grey_shrunk.size
+    print "Pixels ",width,height," "
 
     #value=[[0 for x in range(0,width+1)] for y in range(0,height+1)]
     value = []
     for i in range(width):
         value.append([])
         for j in range(height):
-            value[i].append(im_grey.getpixel((i,j))[0])
+            value[i].append(im_grey_shrunk.getpixel((i,j))[0])
             printValue = value[i][j]
+##            print printValue, " "
     return value
 
-#stop everything when laser switched to off
+
+#stop everything when switch is turned off
 def StopEverything():
+    
     while(GPIO.input(7) == True):
         pass
-
+        print "Engraving Stopped"
 
 def MoveLaserMotor(direction, numberOfHalfSteps):
 
@@ -59,15 +64,15 @@ def MoveLaserMotor(direction, numberOfHalfSteps):
         
     for i in range(numberOfHalfSteps):
         GPIO.output(23,GPIO.HIGH)
-        time.sleep(0.0001)
+        time.sleep(0.001)
         GPIO.output(23,GPIO.LOW)
-        time.sleep(0.0001)
-	if (GPIO.input(7) == True): StopEverything()
+        time.sleep(0.001)
+        if (GPIO.input(7) == True): StopEverything()
+
     GPIO.cleanup()
 
 
 def StationMotor(direction, numberOfHalfSteps):
-    print "test1"
     GPIO.setmode(GPIO.BCM)
     GPIO.setwarnings(False)
     GPIO.setup(24,GPIO.OUT)#direction pin
@@ -80,26 +85,23 @@ def StationMotor(direction, numberOfHalfSteps):
         
     for i in range(numberOfHalfSteps):
         GPIO.output(25,GPIO.HIGH)
-        time.sleep(0.0001)
+        time.sleep(0.001)
         GPIO.output(25,GPIO.LOW)
+        time.sleep(0.001)
         if (GPIO.input(7) == True): StopEverything()
 
     GPIO.cleanup()
 
+##def set_to_RefPoint():
+##    StationMotor(True, PixelTestingSize*
 
 def LEDTime(seconds):
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setwarnings(False)
-    LEDPin = 8 #GPIO number
-
-    GPIO.setup(LEDPin,GPIO.OUT)
-    #print "LASER on"
-    GPIO.output(LEDPin,GPIO.HIGH)
+    GPIO.output(8,GPIO.HIGH)
     time.sleep(seconds)
     #print "LASER off"
-    GPIO.output(LEDPin,GPIO.LOW)
+    GPIO.output(8,GPIO.LOW)
 
-#def PixelBurn(GrayVal):
+##def PixelBurn(GrayVal):
     
     #grayscale darkest to whitest (0 to 255)
     #graycale 1
@@ -112,19 +114,16 @@ def LEDTime(seconds):
 ##    elif (GrayVal
 ##    elif (GrayVal
 ##    elif (GrayVal
-##    elif (GrayVal          ^
+##    elif (GrayVal
 
 
-
-def D2A(D2AVal):
-    #0 = highest voltage (~4.8V, theoretically)
-    #4095 = lowest voltage (~3.9V, theoretic)
+def D2A(D2AVal):            #0 = highest voltage (~4.8V, theoretically)
+                            #4095 = lowest voltage (~3.9V, theoretic)
     GPIO.setwarnings(False)
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(13,GPIO.OUT) #Chip Select (CS) line
     GPIO.setup(19,GPIO.OUT) #CLK line
-    GPIO.setup(26,GPIO.OUT) #Data line('Pixels ', 1200, 630, ' ')
-
+    GPIO.setup(26,GPIO.OUT) #Data line
 
     #first 4 bits are 0011 to set up D/A
     D2AVal = D2AVal & 0x0FFF
@@ -149,48 +148,44 @@ def D2A(D2AVal):
     #CS goes high to terminate communication
     GPIO.output(13,GPIO.HIGH)
 
-def EngravePixels(TwodArrayofPixels, OnePixelSize, TimeLaserIsOn):
+def EngravePixels(TwodArrayofPixels, OnePixelSize):
 
     forward = True  
     backward = False
     width = len(TwodArrayofPixels)          #columns?
-    height = len(TwodArrayofPixels[0])      #rows?  
+    height = len(TwodArrayofPixels[0])      #rows?
+    print width,height
     for i in range(width - 1):
         if(i%2 == 0):                                     
             for j in range(height - 1):
-                pixelBurn(TwodArrayofPixels[i][j])
-        	if (GPIO.input(7) == True): StopEverything()
+##                pixelBurn(TwodArrayofPixels[i][j])
                 if (j == height-1): break
                 MoveLaserMotor(forward, OnePixelSize)
-                                       #time = TimeLaserIsOn*(1/printValue)
-                
-        else: 
+        else:
             for j in range(height - 1,0,-1):
-                pixelBurn(TwodArrayofPixels[i][j])
-		if (GPIO.input(7) == True): StopEverything()
+##                pixelBurn(TwodArrayofPixels[i][j])
                 if (j == 0): break   #if at end of row,  
-                MoveLaserMotor(forward, OnePixelSize)
-                #time = TimeLaserIsOn*(1/printValue)...dont need?
+                MoveLaserMotor(backward, OnePixelSize)
                 
         StationMotor(backward, OnePixelSize) 
         print "New Row"
-        target = picFunc()
+##        target = picFunc()
 
 ################### Where the Magic Happens ####################
 #This now takes pictures every row and promps user for a file to use
+#count Variables 
+
 def main():
-    	GPIO.setmode(GPIO.BCM)
-    	GPIO.setwarnings(False)
-	GPIO.setup(7, GPIO.IN)  
+    root = Tkinter.Tk()
+    file = tkFileDialog.askopenfile(parent=root, mode ='rb',title='Please select a file')
+    file = tkFileDialog.Display( title='Do you want to continue?')
+    ##FILENAME = '/home/pi/Desktop/download.jpg' #/media/pi/C666-B91B/googleimage.jpg'
+    pixels2DArray = ScanImage(file)
+    #LaserOnTimePerPixel = 0.05 #seconds
+    EngravePixels(pixels2DArray, PixelTestingSize)
+    file = tkFileDialog.Display( title='Do you want to continue?')
+    reset()
 
-#interrupt setup
-	GPIO.add_event_detect(7, GPIO.RISING, callback = StopEverything, bouncetime = 3)
-	root = Tkinter.Tk()
-	file = tkFileDialog.askopenfile(parent=root, mode ='rb',title='Please select a file')
-    	##FILENAME = '/home/pi/Desktop/download.jpg' #/media/pi/C666-B91B/		googleimage.jpg'
-	pixels2DArray = ScanImage(file)
-    	LaserOnTimePerPixel = 0.05 #seconds
-	PixelTestingSize = 15 #steps of Motor per Pixel
-	EngravePixels(pixels2DArray, PixelTestingSize, LaserOnTimePerPixel)
-
+PixelTestingSize = 15 #steps of Motor per Pixel
+##set_to_RefPoint(PixelTestingSize)
 main()
