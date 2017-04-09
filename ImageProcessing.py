@@ -4,7 +4,7 @@ from PIL import Image
 import numpy 
 import RPi.GPIO as GPIO
 import time
-import Tkinter, tkFileDialog
+import Tkinter, tkFileDialog, tkMessageBox
 import os
 import datetime
 import time
@@ -13,7 +13,7 @@ from threading import Thread
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
 GPIO.setup(8,GPIO.OUT)
-GPIO.setup(7, GPIO.IN)
+
 
 
 def LaserOn():
@@ -27,7 +27,7 @@ def ScanImage(filename):
     im = Image.open(filename)
     im_grey = im.convert('LA')
     im_grey.convert('RGB').save("/home/pi/Desktop/gray.jpg")
-    im_grey_shrunk = im_grey.resize((100,100))
+    im_grey_shrunk = im_grey.resize((10,10))
     im_grey_shrunk.convert('RGB').save("/home/pi/Desktop/grayShrunk.jpg")
     width,height = im_grey_shrunk.size
     print "Pixels ",width,height," "
@@ -49,6 +49,7 @@ def StopEverything():
     while(GPIO.input(7) == True):
         pass
         print "Engraving Stopped"
+        time.sleep(1)
 
 def MoveLaserMotor(direction, numberOfHalfSteps):
 
@@ -56,6 +57,7 @@ def MoveLaserMotor(direction, numberOfHalfSteps):
     GPIO.setwarnings(False)
     GPIO.setup(18,GPIO.OUT) #direction pin
     GPIO.setup(23,GPIO.OUT) #step pin
+    GPIO.setup(7, GPIO.IN)
     
     if(direction == True):
         GPIO.output(18,GPIO.HIGH) #set direction clockwise
@@ -77,6 +79,7 @@ def StationMotor(direction, numberOfHalfSteps):
     GPIO.setwarnings(False)
     GPIO.setup(24,GPIO.OUT)#direction pin
     GPIO.setup(25,GPIO.OUT)#step pin
+    GPIO.setup(7, GPIO.IN)
     
     if(direction == True):
         GPIO.output(24,GPIO.HIGH) #set direction clockwise
@@ -92,8 +95,12 @@ def StationMotor(direction, numberOfHalfSteps):
 
     GPIO.cleanup()
 
-##def set_to_RefPoint():
-##    StationMotor(True, PixelTestingSize*
+def set_to_RefPoint(PixelSize):
+    for i in range(30):
+        StationMotor(True, PixelSize)
+        time.sleep(0.01)
+        MoveLaserMotor(False, PixelSize)
+        time.sleep(0.01)
 
 def LEDTime(seconds):
     GPIO.output(8,GPIO.HIGH)
@@ -157,35 +164,52 @@ def EngravePixels(TwodArrayofPixels, OnePixelSize):
     print width,height
     for i in range(width - 1):
         if(i%2 == 0):                                     
-            for j in range(height - 1):
+            for j in range(height):
 ##                pixelBurn(TwodArrayofPixels[i][j])
+                time.sleep(0.1)
                 if (j == height-1): break
-                MoveLaserMotor(forward, OnePixelSize)
+                MoveLaserMotor(False, OnePixelSize)
         else:
-            for j in range(height - 1,0,-1):
+            for j in range(height - 1,-1,-1):
 ##                pixelBurn(TwodArrayofPixels[i][j])
+                time.sleep(0.1)
                 if (j == 0): break   #if at end of row,  
-                MoveLaserMotor(backward, OnePixelSize)
+                MoveLaserMotor(True, OnePixelSize)
                 
-        StationMotor(backward, OnePixelSize) 
+        StationMotor(True, OnePixelSize) 
         print "New Row"
-##        target = picFunc()
+
+##def FinishBurning():
+##        result = tkMessageBox.askquestion("done?", "Laser will stop", icon = 'warning')
+##    if result == 'yes'
+##        print "done"
+##    else
+##        print "not done"tkMessageBox
 
 ################### Where the Magic Happens ####################
 #This now takes pictures every row and promps user for a file to use
 #count Variables 
 
 def main():
+    result = True
     root = Tkinter.Tk()
-    file = tkFileDialog.askopenfile(parent=root, mode ='rb',title='Please select a file')
-    file = tkFileDialog.Display( title='Do you want to continue?')
-    ##FILENAME = '/home/pi/Desktop/download.jpg' #/media/pi/C666-B91B/googleimage.jpg'
-    pixels2DArray = ScanImage(file)
-    #LaserOnTimePerPixel = 0.05 #seconds
-    EngravePixels(pixels2DArray, PixelTestingSize)
-    file = tkFileDialog.Display( title='Do you want to continue?')
-    reset()
+    while(result):
+        file = tkFileDialog.askopenfile(parent=root, mode ='rb',title='Please select a file')
+                
+        pixels2DArray = ScanImage(file)
+        EngravePixels(pixels2DArray, PixelTestingSize)
+        result = tkMessageBox.askyesno("Laser", "Continue Burning?")
+        if result:
+            result = tkMessageBox.askyesno("Laser", "Is new burning material in place")
+        print result
+    ##ask to continue window, reset
+    #B1 = Tkinter.Button(root, text = "Delete", command = FinishBurning)
+    #B1.pack()
+    #top.mainloop()
 
-PixelTestingSize = 15 #steps of Motor per Pixel
-##set_to_RefPoint(PixelTestingSize)
+    
+    ##reset()
+    
+PixelTestingSize = 30 #steps of Motor per Pixel
+set_to_RefPoint(PixelTestingSize)
 main()
