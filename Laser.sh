@@ -1,2 +1,2 @@
-cd home/pi/Desktop/LaserEngraver
-python ImageProcessing.py 
+
+python /home/pi/Desktop/LaserEngraver/ImageProcessing.py

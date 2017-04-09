@@ -59,6 +59,7 @@ def MoveLaserMotor(direction, numberOfHalfSteps):
     GPIO.setup(23,GPIO.OUT) #step pin
     GPIO.setup(7, GPIO.IN)
     
+
     if(direction == True):
         GPIO.output(18,GPIO.HIGH) #set direction clockwise
     elif(direction == False):#not sure if this is correct for backwards
@@ -92,6 +93,7 @@ def StationMotor(direction, numberOfHalfSteps):
         GPIO.output(25,GPIO.LOW)
         time.sleep(0.001)
         if (GPIO.input(7) == True): StopEverything()
+
 
     GPIO.cleanup()
 
@@ -152,6 +154,7 @@ def D2A(D2AVal):            #0 = highest voltage (~4.8V, theoretically)
         D2AVal = D2AVal << 1
         GPIO.output(19,GPIO.HIGH)
 
+
     #CS goes high to terminate communication
     GPIO.output(13,GPIO.HIGH)
 
@@ -193,9 +196,11 @@ def EngravePixels(TwodArrayofPixels, OnePixelSize):
 def main():
     result = True
     root = Tkinter.Tk()
+    root.withdraw()
     while(result):
-        file = tkFileDialog.askopenfile(parent=root, mode ='rb',title='Please select a file')
-                
+    	result = False
+        file = tkFileDialog.askopenfile( mode ='rb',title='Please select a file')
+        
         pixels2DArray = ScanImage(file)
         EngravePixels(pixels2DArray, PixelTestingSize)
         result = tkMessageBox.askyesno("Laser", "Continue Burning?")
