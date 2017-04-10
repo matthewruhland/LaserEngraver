@@ -197,6 +197,7 @@ def reset(TwoDarray, PixelSize):
 def main():
     result = True
     root = Tkinter.Tk()
+    root.withdraw()
     while(result):
         file = tkFileDialog.askopenfile(parent=root, mode ='rb',title='Please select a file') 
         pixels2DArray = ScanImage(file)
