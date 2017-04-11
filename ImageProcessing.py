@@ -43,11 +43,10 @@ def ScanImage(filename):
 
 #stop everything when switch is turned off
 def StopEverything():
-    
     while(GPIO.input(7) == True):
-        pass
-        print "Engraving Stopped"
-        time.sleep(1)
+	print "Engraving Stopped"
+	tkMessageBox.showinfo("Switch off", "Turn switch on and click ok to resume, message will not close until engraving finished")
+	time.sleep(1)
 
 def MoveLaserMotor(direction, numberOfHalfSteps):
 
@@ -164,13 +163,13 @@ def EngravePixels(TwodArrayofPixels, OnePixelSize):
         if(i%2 == 0):                                     
             for j in range(height):
 ##                pixelBurn(TwodArrayofPixels[i][j])
-                time.sleep(0.5)
+                time.sleep(0.01)
                 if (j == height-1): break
                 MoveLaserMotor(False, OnePixelSize)
         else:
             for j in range(height - 1,-1,-1):
 ##                pixelBurn(TwodArrayofPixels[i][j])
-                time.sleep(0.5)
+                time.sleep(0.01)
                 if (j == 0): break   #if at end of row,  
                 MoveLaserMotor(True, OnePixelSize)
 
@@ -204,7 +203,7 @@ def main():
         EngravePixels(pixels2DArray, PixelTestingSize)
         result = tkMessageBox.askyesno("Laser", "Engraving complete. Click Yes if you want to burn another image. Click No to quit.")
         if result:
-            result = tkMessageBox.askyesno("Laser", "Turn laser off and load new material now. Click Yes when ready or No to quit.")
+            result = tkMessageBox.askokcancel("Laser", "Turn laser off and load new material now. Click Ok when ready or Cancel to quit.")
         print result
         reset(pixels2DArray, PixelTestingSize)
 
