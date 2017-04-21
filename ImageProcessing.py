@@ -1,10 +1,10 @@
 import cv2
+import Tkinter, tkFileDialog, tkMessageBox
 import PIL
 from PIL import Image
 import numpy 
 import RPi.GPIO as GPIO
 import time
-import Tkinter, tkFileDialog, tkMessageBox
 import os
 import datetime
 import time
@@ -13,7 +13,6 @@ from threading import Thread
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
 GPIO.setup(8,GPIO.OUT)
-
 
 def LaserOn():
     GPIO.output(8,GPIO.HIGH)
@@ -26,8 +25,9 @@ def ScanImage(filename):
     im = Image.open(filename)
     im_grey = im.convert('LA')
     im_grey.convert('RGB').save("/home/pi/Desktop/gray.jpg")
-    im_grey_shrunk = im_grey.resize((10,10))
+    im_grey_shrunk = im_grey.resize((200,200))
     im_grey_shrunk.convert('RGB').save("/home/pi/Desktop/grayShrunk.jpg")
+    
     width,height = im_grey_shrunk.size
     print "Pixels ",width,height," "
 
@@ -35,17 +35,15 @@ def ScanImage(filename):
     for i in range(width):
         value.append([])
         for j in range(height):
-            value[i].append(im_grey_shrunk.getpixel((i,j))[0])
-            printValue = value[i][j]
-##            print printValue, " "
+            value[i].append(im_grey_shrunk.getpixel((j,i))[0])
     return value
-
 
 #stop everything when switch is turned off
 def StopEverything():
     while(GPIO.input(7) == True):
 	print "Engraving Stopped"
-	tkMessageBox.showinfo("Switch off", "Turn switch on and click ok to resume, message will not close until engraving finished")
+	LaserOff()
+	tkMessageBox.showinfo("Switch off", "Turn switch on and click ok to start/resume engraving, message will not close until engraving finished")
 	time.sleep(1)
 
 def MoveLaserMotor(direction, numberOfHalfSteps):
@@ -63,12 +61,10 @@ def MoveLaserMotor(direction, numberOfHalfSteps):
         
     for i in range(numberOfHalfSteps):
         GPIO.output(23,GPIO.HIGH)
-        time.sleep(0.001)
+        time.sleep(0.00005)
         GPIO.output(23,GPIO.LOW)
-        time.sleep(0.001)
+        time.sleep(0.00005)
         if (GPIO.input(7) == True): StopEverything()
-
-    GPIO.cleanup()
 
 
 def StationMotor(direction, numberOfHalfSteps):
@@ -85,40 +81,26 @@ def StationMotor(direction, numberOfHalfSteps):
         
     for i in range(numberOfHalfSteps):
         GPIO.output(25,GPIO.HIGH)
-        time.sleep(0.001)
+        time.sleep(0.0005)
         GPIO.output(25,GPIO.LOW)
-        time.sleep(0.001)
+        time.sleep(0.0005)
         if (GPIO.input(7) == True): StopEverything()
 
-    GPIO.cleanup()
 
 def set_to_RefPoint(PixelSize):
-    for i in range(50):
+    LaserOff()
+    for i in range(60):
         StationMotor(True, PixelSize)
-        time.sleep(0.01)
+    for i in range(60):
         MoveLaserMotor(False, PixelSize)
-        time.sleep(0.01)
+
+    time.sleep(0.01)
+    MoveLaserMotor(False, PixelSize*5)
 
 def LEDTime(seconds):
     GPIO.output(8,GPIO.HIGH)
     time.sleep(seconds)
-    #print "LASER off"
     GPIO.output(8,GPIO.LOW)
-
-##def PixelBurn(GrayVal):
-    
-    #grayscale darkest to whitest (0 to 255)
-    #graycale 1
-##    if (GrayVal..
-##      D2A(0 to 4095)
-##      LEDTime(seconds)
-##    elif (GrayVal
-##    elif (GrayVal
-##    elif (GrayVal
-##    elif (GrayVal
-##    elif (GrayVal
-##    elif (GrayVal
-##    elif (GrayVal
 
 
 def D2A(D2AVal):            #0 = highest voltage (~4.8V, theoretically)
@@ -148,34 +130,63 @@ def D2A(D2AVal):            #0 = highest voltage (~4.8V, theoretically)
         GPIO.output(19,GPIO.LOW)
         D2AVal = D2AVal << 1
         GPIO.output(19,GPIO.HIGH)
-
     #CS goes high to terminate communication
     GPIO.output(13,GPIO.HIGH)
 
+def PixelBurn(GrayVal):
+    
+    #grayscale darkest to whitest (0 to 255)
+    #graycale 1
+    if (GrayVal <= 32):
+        D2A(200)
+        LEDTime(0.2)
+    if (GrayVal > 32 and GrayVal <=64):
+        D2A(200)
+        LEDTime(0.12)
+    if (GrayVal > 64 and GrayVal <=96):
+        D2A(200)
+        LEDTime(0.065)
+    if (GrayVal > 96 and GrayVal <=128):
+        D2A(200)
+        LEDTime(0.035)
+    if (GrayVal > 128 and GrayVal <=160):
+        D2A(200)
+        LEDTime(0.02)
+    if (GrayVal > 160 and GrayVal <=192):
+        D2A(200)
+        LEDTime(0.013)
+    if (GrayVal > 192 and GrayVal <=224):
+        D2A(200)
+        LEDTime(0.0075)
+    if (GrayVal > 224):
+        pass
+
 def EngravePixels(TwodArrayofPixels, OnePixelSize):
 
-    forward = True  
-    backward = False
     width = len(TwodArrayofPixels)          #columns?
     height = len(TwodArrayofPixels[0])      #rows?
     print width,height
+
+    for i in range(3):
+        StationMotor(True, OnePixelSize) 
+        time.sleep(0.01)
+        MoveLaserMotor(False, OnePixelSize) 
+        time.sleep(0.01)
     for i in range(width):
         if(i%2 == 0):                                     
             for j in range(height):
-##                pixelBurn(TwodArrayofPixels[i][j])
-                time.sleep(0.01)
+                PixelBurn(TwodArrayofPixels[i][j])
                 if (j == height-1): break
                 MoveLaserMotor(False, OnePixelSize)
         else:
             for j in range(height - 1,-1,-1):
-##                pixelBurn(TwodArrayofPixels[i][j])
-                time.sleep(0.01)
+                PixelBurn(TwodArrayofPixels[i][j])
                 if (j == 0): break   #if at end of row,  
                 MoveLaserMotor(True, OnePixelSize)
 
         if (i == width - 1): break
         StationMotor(True, OnePixelSize) 
-        print "New Row"
+        print "Row: ", i
 
 def reset(TwoDarray, PixelSize):
     width_length = len(TwoDarray)
@@ -191,7 +202,6 @@ def reset(TwoDarray, PixelSize):
         	time.sleep(0.1)
 
 ################### Where the Magic Happens ####################
-#This now takes pictures every row and promps user for a file to use
 
 def main():
     result = True
@@ -207,7 +217,8 @@ def main():
         print result
         reset(pixels2DArray, PixelTestingSize)
 
-    
+LaserOff()    
 PixelTestingSize = 25 #steps of Motor per Pixel
 set_to_RefPoint(PixelTestingSize)
 main()
+LaserOff()
