@@ -25,7 +25,7 @@ def ScanImage(filename):
     im = Image.open(filename)
     im_grey = im.convert('LA')
     im_grey.convert('RGB').save("/home/pi/Desktop/gray.jpg")
-    im_grey_shrunk = im_grey.resize((200,200))
+    im_grey_shrunk = im_grey.resize((300,300))
     im_grey_shrunk.convert('RGB').save("/home/pi/Desktop/grayShrunk.jpg")
     
     width,height = im_grey_shrunk.size
@@ -142,13 +142,13 @@ def PixelBurn(GrayVal):
         LEDTime(0.2)
     if (GrayVal > 32 and GrayVal <=64):
         D2A(200)
-        LEDTime(0.12)
+        LEDTime(0.175)
     if (GrayVal > 64 and GrayVal <=96):
         D2A(200)
-        LEDTime(0.065)
+        LEDTime(0.08)
     if (GrayVal > 96 and GrayVal <=128):
         D2A(200)
-        LEDTime(0.035)
+        LEDTime(0.04)
     if (GrayVal > 128 and GrayVal <=160):
         D2A(200)
         LEDTime(0.02)
